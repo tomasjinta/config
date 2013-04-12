@@ -1,5 +1,7 @@
 set nocompatible
-scriptencoding utf8
+scriptencoding utf-8
+set encoding=utf-8
+set fileencoding=utf-8,cp932,euc-jp
 
 "----------------------------------------
 " システム設定
