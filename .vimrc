@@ -1,81 +1,190 @@
-if v:lang =~ "utf8$" || v:lang =~ "UTF-8$"
-   set fileencodings=ucs-bom,utf-8,latin1
+set nocompatible
+scriptencoding utf8
+
+"----------------------------------------
+" システム設定
+"----------------------------------------
+"backupを指定してもオプション 'backup' がオンでない限り、
+"バックアップは上書きに成功した後に削除される。
+set nowritebackup
+""バックアップ/スワップファイルを作成する/しない
+set nobackup
+"set noswapfile
+"クリップボードを共有
+set clipboard+=unnamed
+"バックスペースでインデントや改行を削除できるようにする
+set backspace=indent,eol,start
+""□や○の文字があってもカーソル位置がずれないようにする
+set ambiwidth=double
+"コマンドライン補完するときに強化されたものを使う
+set wildmenu
+""マウスを有効にする
+if has('mouse')
+  set mouse=a
+endif
+"pluginを使用可能にする
+filetype plugin indent on
+
+"----------------------------------------
+" 検索
+"----------------------------------------
+
+"検索の時に大文字小文字を区別しない
+""ただし大文字小文字の両方が含まれている場合は大文字小文字を区別する
+set ignorecase
+set smartcase
+"検索時にファイルの最後まで行ったら最初に戻る
+set wrapscan
+""インクリメンタルサーチ
+set incsearch
+"検索文字の強調表示
+set hlsearch
+""w,bの移動で認識する文字
+set iskeyword=a-z,A-Z,48-57,_,.,-,>
+"vimgrep をデフォルトのgrepとする場合internal
+"set grepprg=internal
+
+"----------------------------------------
+" 表示設定
+"----------------------------------------
+"エラー時の音とビジュアルベルの抑制(gvimは.gvimrcで設定)
+set noerrorbells
+set novisualbell
+set visualbell t_vb=
+"マクロ実行中などの画面再描画を行わない
+"set lazyredraw
+"Windowsでディレクトリパスの区切り文字表示に / を使えるようにする
+set shellslash
+"行番号表示
+set number
+"括弧の対応表示時間
+set showmatch matchtime=1
+"タブを設定
+"set ts=4 sw=4 sts=4
+"自動的にインデントする
+set autoindent
+"タイトルを表示
+set title
+"コマンドラインの高さ (gvimはgvimrcで指定)
+set cmdheight=2
+set laststatus=2
+"コマンドをステータス行に表示
+set showcmd
+"画面最後の行をできる限り表示する
+set display=lastline
+"Tab、行末の半角スペースを明示的に表示する
+"set list
+"set listchars=tab:^\ ,trail:~
+
+" ハイライトを有効にする
+if &t_Co > 2 || has('gui_running')
+  syntax on
 endif
 
-set nocompatible	" Use Vim defaults (much better!)
-set bs=indent,eol,start		" allow backspacing over everything in insert mode
-"set ai			" always set autoindenting on
-"set backup		" keep a backup file
-set viminfo='20,\"50	" read/write a .viminfo file, don't store more
-			" than 50 lines of registers
-set history=50		" keep 50 lines of command line history
-set ruler		" show the cursor position all the time
+"色テーマ設定
+"gvimの色テーマは.gvimrcで指定する
+"colorscheme mycolor
 
-" Only do this part when compiled with support for autocommands
-if has("autocmd")
-  augroup redhat
+"----------------------------------------
+"" ノーマルモード
+"----------------------------------------
+""ヘルプ検索
+nnoremap <F1> K
+
+"----------------------------------------
+"" 挿入モード
+"----------------------------------------
+"
+"----------------------------------------
+" ビジュアルモード
+"----------------------------------------
+"
+"----------------------------------------
+" コマンドモード
+"----------------------------------------
+"
+"----------------------------------------
+" Vimスクリプト
+"----------------------------------------
+
+" "ファイルを開いたら前回のカーソル位置へ移動
+
+augroup vimrcEx
   autocmd!
-  " In text files, always limit the width of text to 78 characters
-  autocmd BufRead *.txt set tw=78
-  " When editing a file, always jump to the last cursor position
-  autocmd BufReadPost *
-  \ if line("'\"") > 0 && line ("'\"") <= line("$") |
-  \   exe "normal! g'\"" |
-  \ endif
-  " don't write swapfile on most commonly used directories for NFS mounts or USB sticks
-  autocmd BufNewFile,BufReadPre /media/*,/mnt/* set directory=~/tmp,/var/tmp,/tmp
-  " start with spec file template
-  autocmd BufNewFile *.spec 0r /usr/share/vim/vimfiles/template.spec
+    autocmd BufReadPost *
+    \ if line("'\"") > 1 && line("'\"") <= line('$') |
+    \   exe "normal! g`\"" |
+    \ endif
+augroup END
+
+"挿入モード時、ステータスラインの色を変更
+let g:hi_insert = 'highlight StatusLine guifg=darkblue guibg=darkyellow gui=none ctermfg=blue ctermbg=yellow cterm=none'
+
+if has('syntax')
+  augroup InsertHook
+    autocmd!
+    autocmd InsertEnter * call s:StatusLine('Enter')
+    autocmd InsertLeave * call s:StatusLine('Leave')
   augroup END
 endif
+" if has('unix') && !has('gui_running')
+" ESCでキー入力待ちになる対策
+"   inoremap <silent> <ESC> <ESC>
+" endif
 
-if has("cscope") && filereadable("/usr/bin/cscope")
-   set csprg=/usr/bin/cscope
-   set csto=0
-   set cst
-   set nocsverb
-   " add any database in current directory
-   if filereadable("cscope.out")
-      cs add cscope.out
-   " else add database pointed to by environment
-   elseif $CSCOPE_DB != ""
-      cs add $CSCOPE_DB
-   endif
-   set csverb
+let s:slhlcmd = ''
+function! s:StatusLine(mode)
+  if a:mode == 'Enter'
+    silent! let s:slhlcmd = 'highlight ' . s:GetHighlight('StatusLine')
+    silent exec g:hi_insert
+  else
+    highlight clear StatusLine
+    silent exec s:slhlcmd
+    redraw
+  endif
+endfunction
+
+function! s:GetHighlight(hi)
+  redir => hl
+  exec 'highlight '.a:hi
+  redir END
+  let hl = substitute(hl, '[\r\n]', '', 'g')
+  let hl = substitute(hl, 'xxx', '', '')
+  return hl
+endfunction
+
+"全角スペースを表示
+"コメント以外で全角スペースを指定しているので、scriptencodingと、
+"このファイルのエンコードが一致するよう注意！
+"強調表示されない場合、ここでscriptencodingを指定するとうまくいく事があります。
+"scriptencoding cp932
+
+"デフォルトのZenkakuSpaceを定義
+function! ZenkakuSpace()
+  highlight ZenkakuSpace cterm=underline ctermfg=darkgrey gui=underline guifg=darkgrey
+endfunction
+
+if has('syntax')
+  augroup ZenkakuSpace
+    autocmd!
+    " ZenkakuSpaceをカラーファイルで設定するなら次の行は削除
+    autocmd ColorScheme       * call ZenkakuSpace()
+    " 全角スペースのハイライト指定
+    autocmd VimEnter,WinEnter * match ZenkakuSpace /　/
+  augroup END
+  call ZenkakuSpace()
 endif
 
-" Switch syntax highlighting on, when the terminal has colors
-" Also switch on highlighting the last used search pattern.
-if &t_Co > 2 || has("gui_running")
-  syntax on
-  set hlsearch
-endif
+"----------------------------------------
+" 各種プラグイン設定
+"----------------------------------------
 
-filetype plugin on
+"----------------------------------------
+" 一時設定
+"----------------------------------------
 
-if &term=="xterm"
-     set t_Co=8
-     set t_Sb=[4%dm
-     set t_Sf=[3%dm
-endif
-
-" Don't wake up system with blinking cursor:
-" http://www.linuxpowertop.org/known.php
-let &guicursor = &guicursor . ",a:blinkon0"
-
-" ここから独自
-set autoindent
-set shiftwidth=2
+"----------------------------------------
+" 独自設定
+"----------------------------------------
 imap <C-j> <esc>
 
-filetype off
-"if has('vim_starting')
-"     set runtimepath+=~/.vim/neobundle.vim.git
-"     call neobundle#rc(expand('~/.vim/.bundle'))
-"endif
-"NeoBundle 'Shougo/unite.vim'
-"NeoBundle 'Shougo/neocomplcache'
-"NeoBundle 'Shougo/vim-ref'
-filetype plugin on
-filetype indent on
-" ここまで独自
